@@ -1,0 +1,253 @@
+%^ Using the metalanguage BNF  to specify SOL syntax ^%
+
+<SOLProgram>          ::= { <dataDefinitions> }*
+                          { (( <PROCEDUREDefinition> | <FUNCTIONDefinition> | <HANDLERDefinition> )) }*
+                          <PROGRAMDefinition> EOPC
+
+<dataDefinitions>     ::= <variableDefinitions> | <constantDefinitions>
+
+<variableDefinitions> ::= VAR <identifier> : <datatype> [ [ <LBUBRange> { , <LBUBRange> }* ] ]
+                          { , <identifier> : <datatype> [ [ <LBUBRange> { , <LBUBRange> }* ] ] }* .
+
+<LBUBRange>           ::= [ (( + | - )) ] <integer> : [ (( + | - )) ] <integer>
+
+<constantDefinitions> ::= CON <identifier> : <datatype> := <literal>
+                          { , <identifier> : <datatype> := <literal> }* .
+
+<datatype>            ::= (( INT | FLT | BOOL | CHR ))
+
+<PROGRAMDefinition>   ::= PROGRAM
+                             { <dataDefinitions> }*
+                             { <statement> }*
+                          STOP
+
+<PROCEDUREDefinition> ::= PROCEDURE <identifier> [ ( <formalParameter> { , < formalParameter > }* ) ]
+                             { <dataDefinitions> }*
+                             { <statement> }*
+                          STOP
+
+<FUNCTIONDefinition>  ::= FUNCTION <identifier> : <datatype> ( [ <formalParameter> { , < formalParameter > }* ] )
+                             { <dataDefinitions> }*
+                             { <statement> }*
+                          STOP
+
+<HANDLERDefinition>   ::= HANDLER <identifier> ( <formalParameter> )
+                             { <dataDefinitions> }*
+                             { <statement> }*
+                          STOP
+
+<formalParameter>     ::= [ (( ENTER | OUTPUT | ENTEROUTPUT | ASSIGN )) ] <identifier> : <datatype> [ [ { , }* ] ]
+
+<statement>           ::= { <assertion> }*
+                          ((
+                             <DISPLAYStatement>
+         | <ENTERStatement>
+         | <assignmentStatement>
+         | <CHECKStatement>
+         | <WHENStatement>
+         | <DOWHILEStatement>
+         | <ASKStatement>
+         | <SENDBACKStatement>
+                           | <RAISEStatement>
+                           | <EXITStatement>
+                           | <RESUMEStatement>
+                          ))
+                          { <assertion> }*
+
+<assertion>           :: { <expression> }
+
+<DISPLAYStatement>      ::= DISPLAY (( <string> | <expression> | ENDOFLINE ))
+                            { , (( <string> | <expression> | ENDOFLINE )) }* .
+
+<ENTERStatement>      ::= ENTER [ <string> ] <variable> .
+
+<assignmentStatement> ::= <variable> { , <variable> }* := <expression> .
+
+<CHECKStatement>         ::= CHECK ( <expression> ) THEN                              { <statement> }*
+                        { ELSECHECK ( <expression> ) THEN
+                             { <statement> }* }*
+                        [ ELSE
+                             { <statement> }* ]
+                          STOP
+
+<DOWHILEStatement>    ::= DO
+                             { <statement> }*
+                          WHILE ( <expression> )
+                             { <statement> }*
+                          STOP
+
+<WHENStatement>        ::= WHEN <variable> := <expression> TO <expression> [ BY <expression> ]
+                             { <statement> }*
+                          STOP
+
+<ASKStatement>       ::= ASK <identifier> [ ( (( <expression> | <variable> ))
+                                            { , (( <expression> | <variable> )) }* ) ] .
+
+<SENDBACKStatement>     ::= SENDBACK [ ( <expression> ) ] .
+
+<RAISEStatement>      ::= RAISE <identifier> ( <expression> ) .
+
+<EXITStatement>       ::= EXIT .
+
+<RESUMEStatement>     ::= RESUME .
+
+<expression>          ::= <conjunction> { (( OR | NOR | XOR )) <conjunction> }*
+
+<conjunction>         ::= <negation> { (( AND | NAND )) <negation> }*
+
+<negation>            ::= [ NOT ] <comparison>
+
+<comparison>          ::= <comparator> [ (( < | <= | = | > | >= | (( != | <> )) )) <comparator> ]
+
+<comparator>          ::= <term> { (( + | - )) <term> }*
+
+<term>                ::= <factor> { (( * | / | % )) <factor> }*
+
+<factor>              ::= [ (( ORD  | CHR  | INT   | FLT  |
+                               ABS  | UP   | LOW   | PRED |
+                               SUCC | ISUP | ISLOW | +    | - )) ]  <secondary>
+
+<secondary>           ::= <primary> [ (( ^ | ** )) <primary> ]
+
+<primary>             ::= <variable> | ( <expression> ) | <literal>
+                        | <identifier> ( [ <expression> { , <expression> }* ] )
+                        | <identifier> LB ( <expression> )
+                        | <identifier> UB ( <expression> )
+
+<variable>            ::= <identifier> [ [ <expression> { , <expression> }* ] ]
+
+<identifier>          ::= (( <letter> | _ )) { (( <letter> | <digit> | _ )) }*
+
+<literal>             ::= <integer> | <float> | <character> | <boolean> | <string>
+
+<integer>             ::= <digit> { <digit> }*
+
+<float>               ::= <digit> { <digit> }* . <digit> { <digit> }* [ E [ - ] <digit> { <digit> }* ]
+
+<character>           ::= ' <ASCIICharacter> '                       || *Note* escape both \ and ' with \
+
+<boolean>             ::= true | false
+
+<string>              ::= " { <ASCIICharacter> }* "                  || *Note* escape both \ and " with \
+
+<letter>              ::= A | B | ... | Z | a | b | ... | z
+
+<digit>               ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+<ASCIICharacter>      ::= || Every DISPLAYable ASCII character in range [ ' ','~' ]
+
+<comment>             ::= ** { <ASCIICharacter> }* EOLC               ** single-line comment
+                        | %^ { (( <ASCIICharacter> | EOLC )) }* ^%   %^ multi-line (block) comment ^%
+
+%^ Non- Terminal Symbols: ^%
+
+                        •	<SOL Program>
+                        •	<PROGRAMDefinition>
+                        •	<statement>
+                        •	<CheckStatement>
+                        •	<WhenStatement>
+                        •	<identifier>
+                        •	<string>
+                        •	<ASCIICharacter>
+                        •	<comment>
+                        •	<DOWHILEStatement>
+                        •	<DISPLAYStatement>
+                        •	<ENTERStatement>
+                        •	<AssignmentStatement>
+                        •	<ASKStatement>
+                        •	<SENDBACKStatement>
+                        •	<RAISEStatement>
+                        •	<EXITStatement>
+                        •	<RESUMEStatement>
+
+                        Pseudo Terminal symbols:
+
+                        •	<IDENTIFIER>
+                        •	 <INTEGER>
+                        •	 <STRING>
+                        •	 <EOPTOKEN>
+                        •	 <UNKTOKEN>
+
+%^ Reserved words (Terminal Symbols): ^%
+
+                        •	PROGRAM
+                        •	STOP Stands for (END In C/ C++)
+                        •	DISPLAY Stands for (DISPLAY in C/ C++)
+                        •	ENDOFLINE
+                        •	OR
+                        •	NOR
+                        •	XOR
+                        •	AND
+                        •	NAND
+                        •	NOT
+                        •	TRUE (T)
+                        •	FALSE (F)
+                        •	VAR
+                        •	INTNUM
+                        •	BOOL
+                        •	CON
+                        •	ENTER Stands for (ENTER in C/C++)
+                        •	CHECK Stands for (IF in C/C++))
+                        •	THEN
+                        •	CHECKIF Stands for (Else IF in C/C++))
+                        •	 ELSE
+                        •	 DO
+                        •	 WHILE
+                        •	 WHEN Stands for (For in C/C++))
+                        •	 TO
+                        •	 BY
+                        •	 PROCEDURE
+                        •	 ENTER
+                        •	 OUTPUT
+                        •	 ENTEROUTPUT
+                        •	ASSIGN Stands for (Assign in C/C++))
+                        •	ASK Stands for (ASK in C/C++))
+                        •	SENDBACK (SENDBACK in C/C++))
+
+%^ Punctuation: ^%
+
+                        •	COMMA
+                        •	PERIOD
+                        •	OPARENTHESIS
+                        •	CPARENTHESIS
+                        •	COLON
+                        •	COLONEQ
+                        •	OBRACE
+                        •	CBRACE
+                        •	FUNCTION
+
+%^ Operators: ^%
+
+                        •	LT
+                        •	LTEQ
+                        •	EQ
+                        •	GT
+                        •	GTEQ
+                        •	NOTEQ, // <> and !=
+                        •	PLUS
+                        •	MINUS
+                        •	MULTIPLY
+                        •	DIVIDE
+                        •	MODULUS
+                        •	ABS
+                        •	POWER // ^ and **
+                        •	INC
+                        •	DEC
+
+
+%^ Terminal Symbol: ^%
+
+                        •	Program
+                        •	}
+                        •	//, /<, >/
+                        •	||, !|, ^|
+                        •	&, !&
+                        •	out
+                        •	NO, !
+                        •	+
+                        •	<, <=, ==, >, >=, <>, !=
+                        •	+, -
+                        •	*, /, %
+                        •	abs, +, -
+                        •	^, **
+                        •	True, False
